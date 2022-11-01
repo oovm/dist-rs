@@ -1,50 +1,155 @@
-use std::net::{IpAddr, Ipv6Addr, SocketAddr};
+use std::mem::size_of;
 
+use chrono::NaiveDateTime;
+use sled::Result;
+use uuid::{Timestamp, Uuid};
 
-use axum::{response::IntoResponse, Router, routing::get};
-use axum_extra::routing::SpaRouter;
-use clap::Parser;
-use tower::ServiceBuilder;
-use tower_http::trace::TraceLayer;
-
-/// Setup the command line interface with clap.
-#[derive(Parser, Debug)]
-#[clap(name = "dist", about = "A dist-server for our wasm project!")]
-pub struct Args {
-    /// set the log level
-    #[clap(short = 'l', long = "log", default_value = "debug")]
-    log_level: String,
-    /// set the listen port
-    #[clap(short = 'p', long = "port", default_value = "8080")]
-    port: u16,
-    /// set the directory where static files are to be found
-    #[clap(long = "static-dir", default_value = "../dist")]
-    static_dir: String,
+pub struct User {
+    id: Uuid,
 }
-use local_ip_address::local_ip;
+
+pub enum Archive {
+    Borrowed(Uuid),
+    Owned(ArchiveMeta),
+}
+
+pub struct ArchiveMeta {
+    hash: u128,
+    kind: ArchiveKind,
+    edit: u64,
+    last: Option<Uuid>,
+    next: Option<Uuid>,
+}
+
+impl Archive {
+    pub fn id(&self) -> &Uuid {
+        match self {
+            Archive::Borrowed(v, _) => { v }
+            Archive::Owned(v, _) => { v }
+        }
+    }
+    pub async fn meta(&self) {
+        match self {
+            Archive::Borrowed(_, _) => {}
+            Archive::Owned(_, v) => {
+                // v.clone()
+            }
+        }
+    }
+
+    pub fn create_time(&self) -> Option<NaiveDateTime> {
+        let (s, ms) = self.id().get_timestamp()?.to_unix();
+        let naive = NaiveDateTime::from_timestamp(s as i64, ms);
+        Some(naive)
+    }
+    /// ref no edit time
+    pub fn edit_time(&self) -> Option<Timestamp> {
+        match self {
+            Archive::Borrowed(v, _) => {
+                // v.get_timestamp()
+            }
+            Archive::Owned(_, v) => {
+                // v
+            }
+        }
+        todo!()
+    }
+    pub fn last_version(&self) -> Option<ArchiveMeta> {
+        todo!()
+    }
+    pub fn next_version(&self) -> Option<ArchiveMeta> {
+        todo!()
+    }
+}
+
+impl ArchiveMeta {
+    pub fn edit_time(&self) {
+        // self.create
+    }
+}
+
+pub enum ArchiveKind {
+    Copy(Uuid),
+    Text(Box<TextFile>),
+}
+
+#[test]
+pub fn cont() {
+    println!("{}", size_of::<NaiveDateTime>())
+}
+
+pub struct TextFile {
+    encoding: TextEncoding,
+}
+
+#[repr(C)]
+pub enum TextEncoding {
+    None = 0,
+    ASCII = 1,
+    UTF8 = 2,
+}
+
+impl TextFile {
+    pub fn chars(&self) {
+        match self.encoding {
+            TextEncoding::None => {}
+            TextEncoding::UTF8 => {}
+            TextEncoding::ASCII => {}
+        }
+    }
+}
+
+
+impl Default for TextEncoding {
+    fn default() -> Self {
+        Self::None
+    }
+}
+
+pub struct PngImage {
+    buffer: Vec<u8>,
+}
+
+// impl ArchiveOwned {
+//     pub fn is_dir(&self) {}
+//     pub fn is_file(&self) {}
+// }
 
 
 #[tokio::main]
-async fn main() {
-    let opt = Args::parse();
-    let my_local_ip = local_ip().unwrap();
-    println!("This is my local IP address: {:?}", my_local_ip);
-    if std::env::var("RUST_LOG").is_err() {
-        std::env::set_var("RUST_LOG", format!("{},hyper=info,mio=info", opt.log_level))
-    }
-    tracing_subscriber::fmt::init();
-    let app = Router::new()
-        .route("/api/hello", get(hello))
-        .merge(SpaRouter::new("/assets", opt.static_dir))
-        .layer(ServiceBuilder::new().layer(TraceLayer::new_for_http()));
-    let sock_addr = SocketAddr::from((IpAddr::V6(Ipv6Addr::LOCALHOST), opt.port, ));
-    log::info!("listening on http://{}", sock_addr);
-    axum::Server::bind(&sock_addr)
-        .serve(app.into_make_service())
-        .await
-        .expect("Unable to start dist-server");
-}
+async fn main() -> Result<()> {
+    let db = sled::Config::new()
+        .path("/database")
+        .use_compression(true)
+        .open()?;
 
-async fn hello() -> impl IntoResponse {
-    "hello from dist-server!"
+// insert and get, similar to std's BTreeMap
+    let key = Uuid::default();
+
+    let old_value = db.insert(key, Archive::Borrowed())?;
+
+    assert_eq!(
+        db.get(&key)?,
+        Some(sled::IVec::from("value")),
+    );
+
+// range queries
+//     for kv_result in tree.range("key_1".."key_9") {}
+
+// deletion
+//     let old_value = tree.remove(&key)?;
+
+// atomic compare and swap
+//     tree.compare_and_swap(
+//         key,
+//         Some("current_value"),
+//         Some("new_value"),
+//     )?.unwrap();
+
+// block until all operations are stable on disk
+// (flush_async also available to get a Future)
+    let buffer = db.flush_async().await?;
+    println!("写入: {buffer}");
+
+    Ok(())
 }
