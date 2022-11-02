@@ -1,8 +1,13 @@
 use std::mem::size_of;
 
+use anyhow::Result;
 use chrono::NaiveDateTime;
-use sled::Result;
+use opendal::Operator;
+use opendal::Scheme;
 use uuid::{Timestamp, Uuid};
+
+use futures::StreamExt;
+use futures::TryStreamExt;
 
 pub struct User {
     id: Uuid,
@@ -23,18 +28,10 @@ pub struct ArchiveMeta {
 
 impl Archive {
     pub fn id(&self) -> &Uuid {
-        match self {
-            Archive::Borrowed(v, _) => { v }
-            Archive::Owned(v, _) => { v }
-        }
+        todo!()
     }
     pub async fn meta(&self) {
-        match self {
-            Archive::Borrowed(_, _) => {}
-            Archive::Owned(_, v) => {
-                // v.clone()
-            }
-        }
+        todo!()
     }
 
     pub fn create_time(&self) -> Option<NaiveDateTime> {
@@ -44,14 +41,6 @@ impl Archive {
     }
     /// ref no edit time
     pub fn edit_time(&self) -> Option<Timestamp> {
-        match self {
-            Archive::Borrowed(v, _) => {
-                // v.get_timestamp()
-            }
-            Archive::Owned(_, v) => {
-                // v
-            }
-        }
         todo!()
     }
     pub fn last_version(&self) -> Option<ArchiveMeta> {
@@ -116,40 +105,3 @@ pub struct PngImage {
 // }
 
 
-#[tokio::main]
-async fn main() -> Result<()> {
-    let db = sled::Config::new()
-        .path("/database")
-        .use_compression(true)
-        .open()?;
-
-// insert and get, similar to std's BTreeMap
-    let key = Uuid::default();
-
-    let old_value = db.insert(key, Archive::Borrowed())?;
-
-    assert_eq!(
-        db.get(&key)?,
-        Some(sled::IVec::from("value")),
-    );
-
-// range queries
-//     for kv_result in tree.range("key_1".."key_9") {}
-
-// deletion
-//     let old_value = tree.remove(&key)?;
-
-// atomic compare and swap
-//     tree.compare_and_swap(
-//         key,
-//         Some("current_value"),
-//         Some("new_value"),
-//     )?.unwrap();
-
-// block until all operations are stable on disk
-// (flush_async also available to get a Future)
-    let buffer = db.flush_async().await?;
-    println!("写入: {buffer}");
-
-    Ok(())
-}
