@@ -1,10 +1,7 @@
+pub mod for_mem;
 
 
-pub trait FileSystem {
-    fn create() {
+/// Data storage
+pub trait Backend {
 
-    }
-    fn rename() {
-
-    }
 }
