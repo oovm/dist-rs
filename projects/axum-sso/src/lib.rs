@@ -14,6 +14,9 @@ pub struct Args {
     /// The port which the service needs to listen on
     #[arg(short, long, default_value_t = 7777)]
     port: u16,
+    postgres: String,
 }
 
-pub fn run() {}
+impl Args {
+    pub fn run(&self) {}
+}

@@ -1,17 +1,16 @@
 [package]
-name = "axum-sso"
-version = "0.0.3"
+name = "simple-sso"
+version = "0.0.0"
 authors = ["Aster <192607617@qq.com>"]
-description = "..."
+description = "Simple single sign-on based on postgresql"
 repository = "https://github.com/oovm/sub_projects"
 documentation = "https://docs.rs/dist-rs"
 readme = "Readme.md"
 license = "MPL-2.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
+serde = { version = "1.0.147", features = ["derive"] }
 futures = { version = "0.3.25" }
 local-ip-address = "0.4.9"
 tokio = { version = "1.21.2", features = ["full"] }
@@ -28,7 +27,7 @@ features = ["v4"]
 [dependencies.sqlx]
 version = "0.6.2"
 default-features = false
-features = ["runtime-tokio-rustls", "postgres"]
+features = ["runtime-tokio-rustls", "postgres", "macros", "uuid", "json"]
 
 
 [dependencies.sled]

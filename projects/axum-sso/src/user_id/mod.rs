@@ -1,39 +1,31 @@
-use std::fmt::{Debug, Formatter};
+pub mod for_mem;
+mod token;
 
-use chrono::{NaiveDateTime, TimeZone, Utc};
+use std::fmt::Debug;
+
+use chrono::{DateTime, TimeZone, Utc};
 use uuid::Uuid;
 
+#[derive(Debug)]
 pub struct User {
-    id: Uuid,
-    create_time: i64,
-    active_time: i64,
+    pub id: Uuid,
+    pub create_time: DateTime<Utc>,
+    pub active_time: DateTime<Utc>,
 }
 
-impl Debug for User {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("User")
-            .field("id", &self.id)
-            .field("create_time", &NaiveDateTime::from_timestamp(self.create_time, 0))
-            .field("active_time", &NaiveDateTime::from_timestamp(self.active_time, 0))
-            .finish()
+impl Default for User {
+    fn default() -> Self {
+        Self { id: Uuid::new_v4(), create_time: Utc::now(), active_time: Utc::now() }
     }
 }
 
-impl User {
-    pub fn create_time(&self) -> NaiveDateTime {
-        let sec = self.id.get_timestamp().map(|f| f.to_unix().0).unwrap_or_default();
-        NaiveDateTime::from_timestamp(sec as i64, 0)
-    }
-    pub fn active_time(&self) {}
-}
+impl User {}
 
 #[test]
 fn test() {
-    let now = Utc::now().naive_utc();
-    let user = User { id: Uuid::new_v4(), create_time: now.timestamp(), active_time: now.timestamp() };
+    let user = User::default();
 
     println!("{:#?}", user);
-    println!("{:#?}", user.create_time());
 }
 
 pub struct Register {}
